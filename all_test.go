@@ -155,7 +155,7 @@ func cmp(a, b interface{}) int {
 }
 
 func TestGet0(t *testing.T) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	if g, e := r.Len(), 0; g != e {
 		t.Fatal(g, e)
 	}
@@ -168,7 +168,7 @@ func TestGet0(t *testing.T) {
 }
 
 func TestSetGet0(t *testing.T) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	set := r.Set
 	set(42, 314)
 	if g, e := r.Len(), 1; g != e {
@@ -225,7 +225,7 @@ func TestSetGet0(t *testing.T) {
 func TestSetGet1(t *testing.T) {
 	const N = 40000
 	for _, x := range []int{0, -1, 0x555555, 0xaaaaaa, 0x333333, 0xcccccc, 0x314159} {
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		set := r.Set
 		a := make([]int, N)
 		for i := range a {
@@ -286,16 +286,15 @@ func TestPrealloc(*testing.T) {
 	for i := range a {
 		a[i] = rng.Next()
 	}
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	for _, v := range a {
 		r.Set(v, 0)
 	}
-	r.Close()
 }
 
 func TestSplitXOnEdge(t *testing.T) {
 	// verify how splitX works when splitting X for k pointing directly at split edge
-	tr := TreeNew(cmp)
+	tr := NewTree(cmp)
 
 	// one index page with 2*kx+2 elements (last has .k=∞  so x.c=2*kx+1)
 	// which will splitX on next Set
@@ -378,14 +377,13 @@ func benchmarkSetSeq(b *testing.B, n int) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		debug.FreeOSMemory()
 		b.StartTimer()
 		for j := 0; j < n; j++ {
 			r.Set(j, j)
 		}
 		b.StopTimer()
-		r.Close()
 	}
 	b.StopTimer()
 }
@@ -407,7 +405,7 @@ func BenchmarkGetSeq1e6(b *testing.B) {
 }
 
 func benchmarkGetSeq(b *testing.B, n int) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	for i := 0; i < n; i++ {
 		r.Set(i, i)
 	}
@@ -419,7 +417,6 @@ func benchmarkGetSeq(b *testing.B, n int) {
 		}
 	}
 	b.StopTimer()
-	r.Close()
 }
 
 func BenchmarkSetRnd1e3(b *testing.B) {
@@ -447,14 +444,13 @@ func benchmarkSetRnd(b *testing.B, n int) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		debug.FreeOSMemory()
 		b.StartTimer()
 		for _, v := range a {
 			r.Set(v, 0)
 		}
 		b.StopTimer()
-		r.Close()
 	}
 	b.StopTimer()
 }
@@ -476,7 +472,7 @@ func BenchmarkGetRnd1e6(b *testing.B) {
 }
 
 func benchmarkGetRnd(b *testing.B, n int) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	rng := rng()
 	a := make([]int, n)
 	for i := range a {
@@ -493,14 +489,13 @@ func benchmarkGetRnd(b *testing.B, n int) {
 		}
 	}
 	b.StopTimer()
-	r.Close()
 }
 
 func TestSetGet2(t *testing.T) {
 	const N = 40000
 	for _, x := range []int{0, -1, 0x555555, 0xaaaaaa, 0x333333, 0xcccccc, 0x314159} {
 		rng := rng()
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		set := r.Set
 		a := make([]int, N)
 		for i := range a {
@@ -554,7 +549,7 @@ func TestSetGet2(t *testing.T) {
 }
 
 func TestSetGet3(t *testing.T) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	set := r.Set
 	var i int
 	for i = 0; ; i++ {
@@ -580,7 +575,7 @@ func TestSetGet3(t *testing.T) {
 }
 
 func TestDelete0(t *testing.T) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	if ok := r.Delete(0); ok {
 		t.Fatal(ok)
 	}
@@ -666,7 +661,7 @@ func TestDelete0(t *testing.T) {
 func TestDelete1(t *testing.T) {
 	const N = 130000
 	for _, x := range []int{0, -1, 0x555555, 0xaaaaaa, 0x333333, 0xcccccc, 0x314159} {
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		set := r.Set
 		a := make([]int, N)
 		for i := range a {
@@ -709,7 +704,7 @@ func benchmarkDelSeq(b *testing.B, n int) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		for i := 0; i < n; i++ {
 			r.Set(i, i)
 		}
@@ -747,7 +742,7 @@ func benchmarkDelRnd(b *testing.B, n int) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		for _, v := range a {
 			r.Set(v, 0)
 		}
@@ -757,7 +752,6 @@ func benchmarkDelRnd(b *testing.B, n int) {
 			r.Delete(v)
 		}
 		b.StopTimer()
-		r.Close()
 	}
 	b.StopTimer()
 }
@@ -765,7 +759,7 @@ func benchmarkDelRnd(b *testing.B, n int) {
 func TestDelete2(t *testing.T) {
 	const N = 100000
 	for _, x := range []int{0, -1, 0x555555, 0xaaaaaa, 0x333333, 0xcccccc, 0x314159} {
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 		set := r.Set
 		a := make([]int, N)
 		rng := rng()
@@ -807,7 +801,7 @@ func TestEnumeratorNext(t *testing.T) {
 
 	for i, test := range table {
 		up := test.keys
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 
 		r.Set(10, 100)
 		r.Set(20, 200)
@@ -877,7 +871,7 @@ func TestEnumeratorPrev(t *testing.T) {
 
 	for i, test := range table {
 		dn := test.keys
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 
 		r.Set(10, 100)
 		r.Set(20, 200)
@@ -948,7 +942,7 @@ func TestEnumeratorPrevSanity(t *testing.T) {
 	}
 
 	for i, test := range table {
-		r := TreeNew(cmp)
+		r := NewTree(cmp)
 
 		r.Set(10, 100)
 		r.Set(20, 200)
@@ -993,7 +987,7 @@ func BenchmarkSeekSeq1e6(b *testing.B) {
 func benchmarkSeekSeq(b *testing.B, n int) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
-		t := TreeNew(cmp)
+		t := NewTree(cmp)
 		for j := 0; j < n; j++ {
 			t.Set(j, 0)
 		}
@@ -1004,7 +998,6 @@ func benchmarkSeekSeq(b *testing.B, n int) {
 			e.Close()
 		}
 		b.StopTimer()
-		t.Close()
 	}
 	b.StopTimer()
 }
@@ -1026,7 +1019,7 @@ func BenchmarkSeekRnd1e6(b *testing.B) {
 }
 
 func benchmarkSeekRnd(b *testing.B, n int) {
-	r := TreeNew(cmp)
+	r := NewTree(cmp)
 	rng := rng()
 	a := make([]int, n)
 	for i := range a {
@@ -1044,7 +1037,6 @@ func benchmarkSeekRnd(b *testing.B, n int) {
 		}
 	}
 	b.StopTimer()
-	r.Close()
 }
 
 func BenchmarkNext1e3(b *testing.B) {
@@ -1064,7 +1056,7 @@ func BenchmarkNext1e6(b *testing.B) {
 }
 
 func benchmarkNext(b *testing.B, n int) {
-	t := TreeNew(cmp)
+	t := NewTree(cmp)
 	for i := 0; i < n; i++ {
 		t.Set(i, 0)
 	}
@@ -1088,7 +1080,6 @@ func benchmarkNext(b *testing.B, n int) {
 		}
 	}
 	b.StopTimer()
-	t.Close()
 }
 
 func BenchmarkPrev1e3(b *testing.B) {
@@ -1108,7 +1099,7 @@ func BenchmarkPrev1e6(b *testing.B) {
 }
 
 func benchmarkPrev(b *testing.B, n int) {
-	t := TreeNew(cmp)
+	t := NewTree(cmp)
 	for i := 0; i < n; i++ {
 		t.Set(i, 0)
 	}
@@ -1134,7 +1125,7 @@ func benchmarkPrev(b *testing.B, n int) {
 }
 
 func TestSeekFirst0(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	_, err := b.SeekFirst()
 	if g, e := err, io.EOF; g != e {
 		t.Fatal(g, e)
@@ -1142,7 +1133,7 @@ func TestSeekFirst0(t *testing.T) {
 }
 
 func TestSeekFirst1(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(1, 10)
 	en, err := b.SeekFirst()
 	if err != nil {
@@ -1161,7 +1152,7 @@ func TestSeekFirst1(t *testing.T) {
 }
 
 func TestSeekFirst2(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(1, 10)
 	b.Set(2, 20)
 	en, err := b.SeekFirst()
@@ -1186,7 +1177,7 @@ func TestSeekFirst2(t *testing.T) {
 }
 
 func TestSeekFirst3(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(2, 20)
 	b.Set(3, 30)
 	b.Set(1, 10)
@@ -1217,7 +1208,7 @@ func TestSeekFirst3(t *testing.T) {
 }
 
 func TestSeekLast0(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	_, err := b.SeekLast()
 	if g, e := err, io.EOF; g != e {
 		t.Fatal(g, e)
@@ -1225,7 +1216,7 @@ func TestSeekLast0(t *testing.T) {
 }
 
 func TestSeekLast1(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(1, 10)
 	en, err := b.SeekLast()
 	if err != nil {
@@ -1244,7 +1235,7 @@ func TestSeekLast1(t *testing.T) {
 }
 
 func TestSeekLast2(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(1, 10)
 	b.Set(2, 20)
 	en, err := b.SeekLast()
@@ -1269,7 +1260,7 @@ func TestSeekLast2(t *testing.T) {
 }
 
 func TestSeekLast3(t *testing.T) {
-	b := TreeNew(cmp)
+	b := NewTree(cmp)
 	b.Set(2, 20)
 	b.Set(3, 30)
 	b.Set(1, 10)
@@ -1354,7 +1345,7 @@ func TestPut(t *testing.T) {
 	}
 
 	for iTest, test := range tab {
-		tr := TreeNew(cmp)
+		tr := NewTree(cmp)
 		for i := 0; i < len(test.pre); i += 2 {
 			k, v := test.pre[i], test.pre[i+1]
 			tr.Set(k, v)
@@ -1416,7 +1407,7 @@ func TestPut(t *testing.T) {
 
 func TestSeek(t *testing.T) {
 	const N = 1 << 13
-	tr := TreeNew(cmp)
+	tr := NewTree(cmp)
 	for i := 0; i < N; i++ {
 		k := 2*i + 1
 		tr.Set(k, nil)
@@ -1447,7 +1438,7 @@ func TestSeek(t *testing.T) {
 }
 
 func TestPR4(t *testing.T) {
-	tr := TreeNew(cmp)
+	tr := NewTree(cmp)
 	for i := 0; i < 2*kd+1; i++ {
 		k := 1000 * i
 		tr.Set(k, nil)
@@ -1464,7 +1455,7 @@ func TestPR4(t *testing.T) {
 }
 
 func TestSize0(t *testing.T) {
-	tr := TreeNew(cmp)
+	tr := NewTree(cmp)
 	empty := int(unsafe.Sizeof(*tr))
 	fmt.Println(tr.ByteSize())
 	if tr.ByteSize() != empty {

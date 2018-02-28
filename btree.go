@@ -29,7 +29,6 @@ func init() {
 var (
 	btDPool_ = sync.Pool{New: func() interface{} { return &d{} }}
 	btEPool  = btEpool{sync.Pool{New: func() interface{} { return &Enumerator{} }}}
-	btTPool  = btTpool{sync.Pool{New: func() interface{} { return &Tree{} }}}
 	btXPool_ = sync.Pool{New: func() interface{} { return &x{} }}
 
 	dNodeSize = int(unsafe.Sizeof(d{}))
@@ -53,14 +52,6 @@ func (p *countedPool) put(x interface{}) {
 }
 
 type btTpool struct{ sync.Pool }
-
-func (p *btTpool) get(cmp Cmp) *Tree {
-	x := p.Get().(*Tree)
-	x.cmp = cmp
-	x.xpool.pool = &btXPool_
-	x.dpool.pool = &btDPool_
-	return x
-}
 
 type btEpool struct{ sync.Pool }
 
@@ -218,10 +209,14 @@ func (l *d) mvR(r *d, c int) {
 
 // ----------------------------------------------------------------------- Tree
 
-// TreeNew returns a newly created, empty Tree. The compare function is used
+// NewTree returns a newly created, empty Tree. The compare function is used
 // for key collation.
-func TreeNew(cmp Cmp) *Tree {
-	return btTPool.get(cmp)
+func NewTree(cmp Cmp) *Tree {
+	x := &Tree{}
+	x.cmp = cmp
+	x.xpool.pool = &btXPool_
+	x.dpool.pool = &btDPool_
+	return x
 }
 
 // Clear removes all K/V pairs from the tree.
@@ -233,14 +228,6 @@ func (t *Tree) Clear() {
 	t.clr(t.r)
 	t.c, t.first, t.last, t.r = 0, nil, nil, nil
 	t.ver++
-}
-
-// Close performs Clear and recycles t to a pool for possible later reuse. No
-// references to t should exist or such references must not be used afterwards.
-func (t *Tree) Close() {
-	t.Clear()
-	*t = zt
-	btTPool.Put(t)
 }
 
 // ByteSize returns the aggregate number of bytes used by this Tree.
