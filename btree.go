@@ -28,7 +28,6 @@ func init() {
 
 var (
 	btDPool_ = sync.Pool{New: func() interface{} { return &d{} }}
-	btEPool  = btEpool{sync.Pool{New: func() interface{} { return &Enumerator{} }}}
 	btXPool_ = sync.Pool{New: func() interface{} { return &x{} }}
 
 	dNodeSize = int(unsafe.Sizeof(d{}))
@@ -52,13 +51,14 @@ func (p *countedPool) put(x interface{}) {
 }
 
 type btTpool struct{ sync.Pool }
-
 type btEpool struct{ sync.Pool }
 
-func (p *btEpool) get(err error, hit bool, i int, k interface{} /*K*/, q *d, t *Tree, ver int64) *Enumerator {
-	x := p.Get().(*Enumerator)
+func (x *Enumerator) set(err error, hit bool, i int, k interface{} /*K*/, q *d, t *Tree, ver int64) {
 	x.err, x.hit, x.i, x.k, x.q, x.t, x.ver = err, hit, i, k, q, t, ver
-	return x
+}
+
+func (x *Enumerator) reset(k interface{} /*K*/, t *Tree) {
+	x.set(nil, false, 0, k, nil, t, t.ver)
 }
 
 type (
@@ -492,11 +492,11 @@ func (t *Tree) overflow(p *x, q *d, pi, i int, k interface{} /*K*/, v interface{
 // Seek returns an Enumerator positioned on an item such that k >= item's key.
 // ok reports if k == item.key The Enumerator's position is possibly after the
 // last item in the tree.
-func (t *Tree) Seek(k interface{} /*K*/) (e *Enumerator, ok bool) {
+func (t *Tree) Seek(k interface{} /*K*/, e *Enumerator) (ok bool) {
 	q := t.r
 	if q == nil {
-		e = btEPool.get(nil, false, 0, k, nil, t, t.ver)
-		return
+		e.reset(k, t)
+		return false
 	}
 
 	for {
@@ -507,7 +507,8 @@ func (t *Tree) Seek(k interface{} /*K*/) (e *Enumerator, ok bool) {
 				q = x.x[i+1].ch
 				continue
 			case *d:
-				return btEPool.get(nil, ok, i, k, x, t, t.ver), true
+				e.set(nil, ok, i, k, x, t, t.ver)
+				return true
 			}
 		}
 
@@ -515,31 +516,38 @@ func (t *Tree) Seek(k interface{} /*K*/) (e *Enumerator, ok bool) {
 		case *x:
 			q = x.x[i].ch
 		case *d:
-			return btEPool.get(nil, ok, i, k, x, t, t.ver), false
+			e.set(nil, ok, i, k, x, t, t.ver)
+			return false
 		}
 	}
 }
 
 // SeekFirst returns an enumerator positioned on the first KV pair in the tree,
-// if any. For an empty tree, err == io.EOF is returned and e will be nil.
-func (t *Tree) SeekFirst() (e *Enumerator, err error) {
+// if any. For an empty tree, err == io.EOF is returned and e will be nil. TODO <-
+func (t *Tree) SeekFirst(e *Enumerator) error {
 	q := t.first
 	if q == nil {
-		return nil, io.EOF
+		var k interface{} /*K*/
+		e.reset(k, t)
+		return io.EOF
 	}
 
-	return btEPool.get(nil, true, 0, q.d[0].k, q, t, t.ver), nil
+	e.set(nil, true, 0, q.d[0].k, q, t, t.ver)
+	return nil
 }
 
 // SeekLast returns an enumerator positioned on the last KV pair in the tree,
-// if any. For an empty tree, err == io.EOF is returned and e will be nil.
-func (t *Tree) SeekLast() (e *Enumerator, err error) {
+// if any. For an empty tree, err == io.EOF is returned and e will be nil. TODO <-
+func (t *Tree) SeekLast(e *Enumerator) error {
 	q := t.last
 	if q == nil {
-		return nil, io.EOF
+		var k interface{} /*K*/
+		e.reset(k, t)
+		return io.EOF
 	}
 
-	return btEPool.get(nil, true, q.c-1, q.d[q.c-1].k, q, t, t.ver), nil
+	e.set(nil, true, q.c-1, q.d[q.c-1].k, q, t, t.ver)
+	return nil
 }
 
 // Set sets the value associated with k.
@@ -811,13 +819,6 @@ func (t *Tree) underflowX(p *x, q *x, pi int, i int) (*x, int) {
 }
 
 // ----------------------------------------------------------------- Enumerator
-
-// Close recycles e to a pool for possible later reuse. No references to e
-// should exist or such references must not be used afterwards.
-func (e *Enumerator) Close() {
-	*e = ze
-	btEPool.Put(e)
-}
 
 // Next returns the currently enumerated item, if it exists and moves to the
 // next item in the key collation order. If there is no item to return, err ==
